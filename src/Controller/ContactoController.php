@@ -2,11 +2,16 @@
 
 namespace App\Controller;
 use App\Entity\Contacto;
+use App\Form\ContactoType;
+use Doctrine\DBAL\Types\TextType as TypesTextType;
 use Doctrine\Persistence\ManagerRegistry;
 use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 
 class ContactoController extends AbstractController
 {
@@ -110,7 +115,7 @@ class ContactoController extends AbstractController
 
     //Borrar
     /**
-     * @Route("/contacto/borrar/{id}/{texto}", name="buscar_contacto2")
+     * @Route("/contacto/borrar/{id}/{texto}", name="borrar")
      */
     public function borrar(ManagerRegistry $doctrine, $id, $texto) : Response{
         $entityManager = $doctrine->getManager();
@@ -127,5 +132,148 @@ class ContactoController extends AbstractController
             }else{
                 return $this->render('page/ficha_contacto.html.twig', ['contacto' => null]);
             }
+    }
+
+    //Esta nueva funcion nos va a permitir crear un formulario para crear nuevos usuarios.
+    //Este formulario solo envia datos en forma de POST es decir que no inserta nada
+    /**
+     * @Route("/contacto/nuevo", name="nuevo_contacto")
+     */
+    public function nuevo(){
+        $contacto = new Contacto();
+
+        //creamos la variable $formulario en la cual almacenaremos este objeto, es decir el usuario que est
+        //amos creando, con la funcion createFormBuilder y de parametro del objeto que queremos crear.
+       
+        $formulario = $this->createFormBuilder($contacto)
+
+        //con add, pasamos el nombre de la variable y el tipo que es en el formulario,(textType es bloque de texto)
+        //y asi el nombre que introducimos ahi será el valor que tendra nombre para ese objeto
+       
+            ->add('nombre', TextType::class)
+            ->add('telefono', TextType::class)
+
+        //aqui es lo mismo solo que añadimos la fucnion array, que nos permite modificar el nombre de la etiqueta 
+        //asi no sale el nombre de la variable, esto es solo algo visual.
+
+            ->add('email', TextType::class, array('label' => 'Correo electronico'))
+            ->add('save', SubmitType::class, array('label' => 'Enviar'))
+            ->getForm();
+        return $this->render('nuevo.html.twig', array('formulario' => $formulario->createView()));
+    }
+
+
+
+
+    //este formulatio insertará los datos en la base de datos.
+    /**
+     * @Route("/contacto/nuevo2", name="nuevo_contacto")
+     */
+    public function nuevo2(ManagerRegistry $doctrine, Request $request){
+        $contacto = new Contacto();
+
+        //creamos la variable $formulario en la cual almacenaremos este objeto, es decir el usuario que est
+        //amos creando, con la funcion createFormBuilder y de parametro del objeto que queremos crear.
+       
+        $formulario = $this->createFormBuilder($contacto)
+
+        //con add, pasamos el nombre de la variable y el tipo que es en el formulario,(textType es bloque de texto)
+        //y asi el nombre que introducimos ahi será el valor que tendra nombre para ese objeto
+       
+            ->add('nombre', TextType::class)
+            ->add('telefono', TextType::class)
+
+        //aqui es lo mismo solo que añadimos la fucnion array, que nos permite modificar el nombre de la etiqueta 
+        //asi no sale el nombre de la variable, esto es solo algo visual.
+
+            ->add('email', TextType::class, array('label' => 'Correo electronico'))
+            ->add('save', SubmitType::class, array('label' => 'Enviar'))
+            ->getForm();
+            // En primer lugar, el controlador recibirá un objeto Request, 
+            //que contendrá los datos del formulario enviado (en el caso de que se haya enviado): 
+            $formulario->handleRequest($request);
+        
+
+            if($formulario->isSubmitted() && $formulario->isValid()){
+                $contacto = $formulario->getData();
+                //conecta con la base de datos
+                $entityManager = $doctrine->getManager();
+                //persist inserta los datos en la tabla de la bases de datos
+                $entityManager->persist($contacto);
+                //fluch guarda los cambios insertados en la tabla
+                $entityManager->flush();
+                //te redirige a una nueva ruta, le paso la funcion buscar_contacto y el campo codigo buscando la id del contacto insertado
+                return $this->redirectToRoute('buscar_contacto',['codigo' => $contacto->getId()]);
+            }
+        
+        return $this->render('nuevo.html.twig', array('formulario' => $formulario->createView()));
+    }
+
+
+
+    //editar con el formulario
+    /**
+     * @Route("/contacto/editarForm/{%codigo}", name="editarForm", requirements={"$codigo"="\d+"})
+     */
+    public function editarForm(ManagerRegistry $doctrine, Request $request, $codigo){
+        $repositorio = $doctrine->getRepository(Contacto::class);
+        $contacto= $repositorio->find($codigo);
+
+        //creamos la variable $formulario en la cual almacenaremos este objeto, es decir el usuario que est
+        //amos creando, con la funcion createFormBuilder y de parametro del objeto que queremos crear.
+       
+        $formulario = $this->createForm(ContactoType::class, $contacto);
+
+            // En primer lugar, el controlador recibirá un objeto Request, 
+            //que contendrá los datos del formulario enviado (en el caso de que se haya enviado): 
+            $formulario->handleRequest($request);
+        
+
+            if($formulario->isSubmitted() && $formulario->isValid()){
+                $contacto = $formulario->getData();
+                //conecta con la base de datos
+                $entityManager = $doctrine->getManager();
+                //persist inserta los datos en la tabla de la bases de datos
+                $entityManager->persist($contacto);
+                //fluch guarda los cambios insertados en la tabla
+                $entityManager->flush();
+                //te redirige a una nueva ruta, le paso la funcion buscar_contacto y el campo codigo buscando la id del contacto insertado
+                return $this->redirectToRoute('buscar_contacto',['codigo' => $contacto->getId()]);
+            }
+        
+        return $this->render('nuevo.html.twig', array('formulario' => $formulario->createView()));
+    }
+
+
+
+    //este formulatio insertará los datos en la base de datos.
+    /**
+     * @Route("/contacto/nuevo3", name="nuevo3")
+     */
+    public function nuevo3(ManagerRegistry $doctrine, Request $request){
+        $contacto = new Contacto();
+
+        //creamos la variable $formulario en la cual almacenaremos este objeto, es decir el usuario que est
+        //amos creando, con la funcion createFormBuilder y de parametro del objeto que queremos crear.
+       
+        $formulario = $this->createForm(ContactoType::class, $contacto);
+            // En primer lugar, el controlador recibirá un objeto Request, 
+            //que contendrá los datos del formulario enviado (en el caso de que se haya enviado): 
+            $formulario->handleRequest($request);
+        
+
+            if($formulario->isSubmitted() && $formulario->isValid()){
+                $contacto = $formulario->getData();
+                //conecta con la base de datos
+                $entityManager = $doctrine->getManager();
+                //persist inserta los datos en la tabla de la bases de datos
+                $entityManager->persist($contacto);
+                //fluch guarda los cambios insertados en la tabla
+                $entityManager->flush();
+                //te redirige a una nueva ruta, le paso la funcion buscar_contacto y el campo codigo buscando la id del contacto insertado
+                return $this->redirectToRoute('buscar_contacto',['codigo' => $contacto->getId()]);
+            }
+        
+        return $this->render('nuevo.html.twig', array('formulario' => $formulario->createView()));
     }
 }
